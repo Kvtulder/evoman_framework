@@ -2,10 +2,12 @@ import sys, os
 sys.path.insert(0, 'evoman')
 from environment import Environment
 from demo_controller import player_controller
+import random as rnd
 
 import numpy as np
 
 n_hidden_neurons = 10
+
 
 def init():
     """
@@ -16,26 +18,104 @@ def init():
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
+    controller = player_controller(n_hidden_neurons)
+
     env = Environment(experiment_name=experiment_name,
                       playermode='ai',
-                      player_controller=player_controller(n_hidden_neurons),
+                      player_controller=controller,
                       )
 
     return env
+
+def run_play(weights):
+    stats = env.play(pcont=weights)
+    fitness = stats[0]
+
+    return fitness
+
+def cross_rand(pop_data,best,population):
+    """
+    Performs random crossover
+    """
+    all_weights = []
+    # extract best individuals:
+    indeces=list(pop_data.keys())[:best]
+
+    # generate all new individuals from random crossover
+    for i in range(population):
+        # choose random individual from list:
+        parent1 = rnd.choice(indeces)
+        parent2 = rnd.choice(indeces)
+        while parent1==parent2:
+            parent2 = rnd.choice(indeces)
+
+        parent1_data = pop_data[parent1][1]
+        parent2_data = pop_data[parent2][1]
+
+        # compose child of randomly selected genomes of parents
+        child = []
+        for i,c in enumerate(parent1_data):
+            if rnd.random()>0.5:
+                child += [parent1_data[i]]
+            else:
+                child += [parent2_data[i]]
+
+        all_weights += [child]
+
+    return np.array(all_weights)
+
+
+def evo_alg(evo_type,env,n_hidden_neurons):
+    """
+    This function uses the two evolutionary algorithms
+    to optimize the weights used in the neural network
+    """
+    # initialise parameters for NEAT1
+    ngens = 10
+    population  = 20
+    best = 10
+
+    # initialise parameters for NEAT2
+    if evo_type=='NEAT2':
+        pass
+
+    pop_data = {}
+
+    # initialize population randomly
+    for ind in range(population):
+        # initialise random weights
+        weights = np.random.uniform(-1,1,size=(n_hidden_neurons+20*n_hidden_neurons+5+n_hidden_neurons*5))
+
+        fitness = run_play(weights)
+        pop_data[ind] = (fitness, weights)
+
+    # perform evolutionary algorithm for all generations
+    for gen in range(ngens):
+
+        print(f'RUN: {gen+1}')
+
+        # all_fitness = sorted(pop_data, reverse=True)
+        pop_data={k: v for k, v in sorted(pop_data.items(), key=lambda item: item[1][0], reverse=True)}
+
+        # perform cross-over on best individuals
+        all_weights = cross_rand(pop_data,best,population)
+
+        # overwrite old population data
+        pop_data = {}
+
+        for ind in range(population):
+            weights = all_weights[ind]
+
+            fitness = run_play(weights)
+            pop_data[ind] = (fitness,weights)
 
 
 if __name__ == '__main__':
 
     env = init()
 
-    # use first EA
-    # TODO:
+    # run first algorithm
+    evo_alg('NEAT1', env, n_hidden_neurons)
 
-    # use second EA
-    # TODO:
-    weights = np.random.rand(10)
-    weights = np.append(weights,[np.random.rand(20,n_hidden_neurons)])
-    weights = np.append(weights,[np.random.rand(5)])
-    weights = np.append(weights,[np.random.rand(10,5)])
-    print(weights)
-    env.play(pcont=weights)
+    # run second algorithm
+    # evo_alg('NEAT2', env, n_hidden_neurons)
