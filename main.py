@@ -62,8 +62,19 @@ def cross_rand(pop_data,best,population):
     return np.array(all_weights)
 
 def mutate(weights):
-    return np.array([weight + np.random.normal(loc=weight, scale=abs(0.1*weight)) for weight in weights])
-
+    '''
+    adds normally distributed noise to the weights
+    '''
+    mutated_weights = []
+    for weight in weights:
+        new_weight = np.random.normal(loc=weight, scale=abs(0.1*weight))
+        if new_weight >= -1 and new_weight <= 1:
+            mutated_weights.append(new_weight)
+        elif new_weight < -1:
+            mutated_weights.append(-1)
+        else:
+            mutated_weights.append(1)
+    return np.array(mutated_weights)
 
 def evo_alg(evo_type,env,n_hidden_neurons):
     """
