@@ -44,10 +44,7 @@ def cross_rand(pop_data,best,population):
     # generate all new individuals from random crossover
     for i in range(population):
         # choose random individual from list:
-        parent1 = rnd.choice(indeces)
-        parent2 = rnd.choice(indeces)
-        while parent1==parent2:
-            parent2 = rnd.choice(indeces)
+        parent1, parent2 = np.random.choice(indeces, size=2, replace=False)
 
         parent1_data = pop_data[parent1][1]
         parent2_data = pop_data[parent2][1]
@@ -64,6 +61,9 @@ def cross_rand(pop_data,best,population):
 
     return np.array(all_weights)
 
+def mutate(weights):
+    return np.array([weight + np.random.normal(loc=weight, scale=abs(0.1*weight)) for weight in weights])
+
 
 def evo_alg(evo_type,env,n_hidden_neurons):
     """
@@ -72,7 +72,7 @@ def evo_alg(evo_type,env,n_hidden_neurons):
     """
     # initialise parameters for NEAT1
     ngens = 10
-    population  = 20
+    population = 20
     best = 10
 
     # initialise parameters for NEAT2
@@ -84,6 +84,7 @@ def evo_alg(evo_type,env,n_hidden_neurons):
     # initialize population randomly
     for ind in range(population):
         # initialise random weights
+
         weights = np.random.uniform(-1,1,size=(n_hidden_neurons+20*n_hidden_neurons+5+n_hidden_neurons*5))
 
         fitness = run_play(weights)
@@ -95,6 +96,8 @@ def evo_alg(evo_type,env,n_hidden_neurons):
         print(f'RUN: {gen+1}')
 
         # all_fitness = sorted(pop_data, reverse=True)
+
+        # sort by fitness
         pop_data={k: v for k, v in sorted(pop_data.items(), key=lambda item: item[1][0], reverse=True)}
 
         # perform cross-over on best individuals
@@ -104,10 +107,12 @@ def evo_alg(evo_type,env,n_hidden_neurons):
         pop_data = {}
 
         for ind in range(population):
-            weights = all_weights[ind]
+            weights = mutate(all_weights[ind])
 
             fitness = run_play(weights)
             pop_data[ind] = (fitness,weights)
+
+        # print([fit[0] for k, fit in pop_data.items()])
 
 
 if __name__ == '__main__':
