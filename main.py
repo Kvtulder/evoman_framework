@@ -137,15 +137,15 @@ if __name__ == '__main__':
 
     n_runs = 10
     n_gens = 20
-    n_pop  = 2
+    n_pop  = 10
     k = 3
     l = int(2.5*n_pop)
     n_genes= n_hidden_neurons+20*n_hidden_neurons+5+n_hidden_neurons*5
 
     mode = '(mu, lambda)'
     for run in range(n_runs):
-        ES.evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run)
+        ES.evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run, enemy)
 
     mode = '(mu+lambda)'
     for run in range(n_runs):
-        ES.evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run)
+        ES.evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run, enemy)

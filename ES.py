@@ -5,6 +5,7 @@ This file implements a Evolutionary Strategies Algorithm.
 import numpy as np
 import random as rnd
 import pandas as pd
+import sys, os
 
 def avg(list):
     return sum(list)/len(list)
@@ -71,21 +72,38 @@ def mutation(sr, new_weights):
 
 
 
-def save_run(run, pop_data):
+def save_run(run, pop_data, mode, enemy):
     """
     Saves run data to csv
     """
+    map_name = mode + '_' + str(enemy)
+    if not os.path.exists(map_name):
+        os.makedirs(map_name)
+
+    string = str(pop_data[0][0])
+    for i in range(1, len(pop_data)):
+        string += ", "
+        string += str(pop_data[i][0])
+    f = open(map_name + '/' + mode + '_' + str(enemy) + '_' + str(run) + ".csv", "a")
+    f.write(string + '\n')
+    f.close()
 
 
-
-def save_bestind(run, best_ind):
+def save_bestind(run, mode, enemy, best_ind):
     """
     Saves best individual data of each run
     """
-    pass
+    map_name = mode + '_' + str(enemy)
 
+    string = str(best_ind[0]) + str(best_ind[1][0])
+    for i in range(1, len(best_ind[1])):
+        string += ", "
+        string += str(best_ind[1][i])
+    f = open(map_name + '/' + mode + '_best_' + str(enemy) + ".csv", "a")
+    f.write(string + '\n')
+    f.close()
 
-def evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run):
+def evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run, enemy):
     """
     Main function, runs Evolutionary Strategies algorithm
     """
@@ -107,6 +125,8 @@ def evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run):
 
     sr = [0.2]
     overall_sr = sr[0]
+
+    save_run(0, pop_data, mode, enemy)
 
     for gen in range(n_gens):
         print()
@@ -158,7 +178,7 @@ def evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run):
 
         # print(best_ind)
 
-        save_run(run, pop_data)
+        save_run(run+1, pop_data, mode, enemy)
 
     # write best result to csv
-    save_bestind(run, best_ind)
+    save_bestind(run, mode, enemy, best_ind)
