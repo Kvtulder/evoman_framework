@@ -126,7 +126,7 @@ def evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run, e
     sr = [0.2]
     overall_sr = sr[0]
 
-    save_run(0, pop_data, mode, enemy)
+    save_run(run+1, pop_data, mode, enemy)
 
     for gen in range(n_gens):
         print()
