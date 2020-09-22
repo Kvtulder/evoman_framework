@@ -3,6 +3,7 @@ sys.path.insert(0, 'evoman')
 from environment import Environment
 from demo_controller import player_controller
 import random as rnd
+import ES
 
 import numpy as np
 
@@ -38,8 +39,13 @@ def cross_rand(pop_data,best,population):
     Performs random crossover
     """
     all_weights = []
+    indeces = []
+
     # extract best individuals:
-    indeces=list(pop_data.keys())[:best]
+    if not best:
+        indeces = list(pop_data.keys())
+    else:
+        indeces = list(pop_data.keys())[:best]
 
     # generate all new individuals from random crossover
     for i in range(population):
@@ -61,13 +67,13 @@ def cross_rand(pop_data,best,population):
 
     return np.array(all_weights)
 
-def mutate(weights):
-    '''
+def mutate(weights,gen):
+    """
     adds normally distributed noise to the weights
-    '''
+    """
     mutated_weights = []
     for weight in weights:
-        new_weight = np.random.normal(loc=weight, scale=abs(0.1*weight))
+        new_weight = np.random.normal(loc=weight, scale=0.5/(gen+1))
         if new_weight >= -1 and new_weight <= 1:
             mutated_weights.append(new_weight)
         elif new_weight < -1:
@@ -88,7 +94,7 @@ def evo_alg(evo_type,env,n_hidden_neurons):
 
     # initialise parameters for NEAT2
     if evo_type=='NEAT2':
-        pass
+        best = False
 
     pop_data = {}
 
@@ -106,8 +112,6 @@ def evo_alg(evo_type,env,n_hidden_neurons):
 
         print(f'RUN: {gen+1}')
 
-        # all_fitness = sorted(pop_data, reverse=True)
-
         # sort by fitness
         pop_data={k: v for k, v in sorted(pop_data.items(), key=lambda item: item[1][0], reverse=True)}
 
@@ -118,12 +122,11 @@ def evo_alg(evo_type,env,n_hidden_neurons):
         pop_data = {}
 
         for ind in range(population):
-            weights = mutate(all_weights[ind])
+            weights = mutate(all_weights[ind],gen)
 
             fitness = run_play(weights)
             pop_data[ind] = (fitness,weights)
 
-        # print([fit[0] for k, fit in pop_data.items()])
 
 
 if __name__ == '__main__':
@@ -131,7 +134,15 @@ if __name__ == '__main__':
     env = init()
 
     # run first algorithm
-    evo_alg('NEAT1', env, n_hidden_neurons)
+    # evo_alg('NEAT1', env, n_hidden_neurons)
+
+    n_gens = 10
+    n_pop  = 10
+    k = 3
+    l = int(2.5*n_pop)
+    n_genes= n_hidden_neurons+20*n_hidden_neurons+5+n_hidden_neurons*5
+
+    ES.evol_strat(n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k)
 
     # run second algorithm
     # evo_alg('NEAT2', env, n_hidden_neurons)
