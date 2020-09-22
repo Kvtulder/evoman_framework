@@ -10,7 +10,7 @@ import numpy as np
 n_hidden_neurons = 10
 
 
-def init():
+def init(enemy):
     """
     Initialise game environment
     """
@@ -24,6 +24,7 @@ def init():
     env = Environment(experiment_name=experiment_name,
                       playermode='ai',
                       player_controller=controller,
+                      enemies=[enemy]
                       )
 
     return env
@@ -131,18 +132,20 @@ def evo_alg(evo_type,env,n_hidden_neurons):
 
 if __name__ == '__main__':
 
-    env = init()
+    enemy = 2
+    env = init(enemy)
 
-    # run first algorithm
-    # evo_alg('NEAT1', env, n_hidden_neurons)
-
-    n_gens = 10
-    n_pop  = 10
+    n_runs = 10
+    n_gens = 20
+    n_pop  = 2
     k = 3
     l = int(2.5*n_pop)
     n_genes= n_hidden_neurons+20*n_hidden_neurons+5+n_hidden_neurons*5
 
-    ES.evol_strat(n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k)
+    mode = '(mu, lambda)'
+    for run in range(n_runs):
+        ES.evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run)
 
-    # run second algorithm
-    # evo_alg('NEAT2', env, n_hidden_neurons)
+    mode = '(mu+lambda)'
+    for run in range(n_runs):
+        ES.evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run)

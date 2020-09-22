@@ -4,6 +4,7 @@ This file implements a Evolutionary Strategies Algorithm.
 
 import numpy as np
 import random as rnd
+import pandas as pd
 
 def avg(list):
     return sum(list)/len(list)
@@ -27,7 +28,8 @@ def global_recomb(pop_data, n_pop, n_genes, l):
         child = []
 
         for j in range(n_genes):
-            parent = np.random.choice(list(pop_data.keys()))
+            parent = np.random.choice(range(len(pop_data)))
+            # print(parent)
             child += [pop_data[parent][1][j]]
 
         new_weights += [child]
@@ -36,6 +38,9 @@ def global_recomb(pop_data, n_pop, n_genes, l):
 
 
 def succes_rate(old_fitness, new_fitness):
+    """
+    Computes succes rate
+    """
     succ = 0
     old_fitness = sorted(old_fitness,reverse=True)
 
@@ -45,10 +50,11 @@ def succes_rate(old_fitness, new_fitness):
 
     return succ/len(new_fitness)
 
+
 def mutation(sr, new_weights):
-
-    pop_data = {}
-
+    """
+    Performs mutation
+    """
     c = 0.8
     sigma = 1
 
@@ -64,9 +70,28 @@ def mutation(sr, new_weights):
     return new_weights
 
 
-def evol_strat(n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k):
 
-    pop_data = {}
+def save_run(run, pop_data):
+    """
+    Saves run data to csv
+    """
+
+
+
+def save_bestind(run, best_ind):
+    """
+    Saves best individual data of each run
+    """
+    pass
+
+
+def evol_strat(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k, run):
+    """
+    Main function, runs Evolutionary Strategies algorithm
+    """
+
+    pop_data = []
+    best_ind = (0,[])
 
     for ind in range(l):
 
@@ -74,7 +99,11 @@ def evol_strat(n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k):
         weights = np.random.uniform(-1,1,size=n_genes)
 
         fitness = run_play(weights, env)
-        pop_data[ind] = (fitness, weights)
+        pop_data += [(fitness, weights)]
+
+    for i in pop_data:
+        if i[0]>best_ind[0]:
+            best_ind = i
 
     sr = [0.2]
     overall_sr = sr[0]
@@ -90,24 +119,29 @@ def evol_strat(n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k):
         new_weights = global_recomb(pop_data, n_pop, n_genes, l)
         new_weights = mutation(overall_sr, new_weights)
 
-        old_fitness = [pop_data[i][0] for i in pop_data]
+        old_fitness = [i[0] for i in pop_data]
         new_fitness = []
 
         for ind in range(l):
             new_fitness += [run_play(new_weights[ind], env)]
 
-        pop_data = {}
+        # if (mu, lambda), throw away parents
+        if mode == '(mu, lambda)':
+            pop_data = []
+
+        # put new weights in population data
         for i,c in enumerate(new_fitness):
-            pop_data[i] = (c, new_weights[i])
+            pop_data += [(c, new_weights[i])]
 
-        pop_data = {k: v for k, v in sorted(pop_data.items(), key=lambda item: item[1][0], reverse=True)}
-        best_keys = list(pop_data.keys())[:n_pop]
-        pop_data = {k: pop_data[k] for k in best_keys}
-        # print(pop_data)
+        print(f'LEN POP_DATA: {len(pop_data)}')
 
-        # select mu best offspring from lambda:
-        new_fitness = sorted(new_fitness,reverse=True)
-        new_fitness = new_fitness[:n_pop]
+        # select best performing indivisuals
+        pop_data = sorted(pop_data, key=lambda tup: tup[0], reverse=True)
+        pop_data = pop_data[:n_pop]
+
+        print(f'LEN POP_DATA: {len(pop_data)}')
+
+        new_fitness = [i[0] for i in pop_data]
 
         # compute succes rate for each round. update overal sr each k rounds
         sr += [succes_rate(old_fitness, new_fitness)]
@@ -117,3 +151,14 @@ def evol_strat(n_hidden_neurons, n_gens, n_pop, env, n_genes, l, k):
             print(f'overall succes rate: {overall_sr}')
 
         print(f'SUCCES RATE: {sr}')
+
+        for i in pop_data:
+            if i[0]>best_ind[0]:
+                best_ind = i
+
+        # print(best_ind)
+
+        save_run(run, pop_data)
+
+    # write best result to csv
+    save_bestind(run, best_ind)
