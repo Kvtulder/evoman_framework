@@ -7,6 +7,18 @@ import random as rnd
 This file implements the Differential Evolution algorithm using scipy
 """
 
+
+def get_best_ind(pop_data, best_ind):
+    """
+    Checks if a new best individual is found
+    """
+    for i in pop_data:
+        if i['fitness'] > best_ind[0]:
+            best_ind = (i['fitness'], i['target'])
+
+    return best_ind
+
+
 def run_play(weights, env):
     """
     Runs play function in environment, returns fitness for given weights
@@ -16,12 +28,22 @@ def run_play(weights, env):
 
     return fitness
 
+
 def recalc_fitness(pop_data, env):
+    """
+    Recalculates fitness for new enemy
+    """
     for ind in pop_data:
         fitness = run_play(ind['target'], env)
+        print(fitness)
         pop_data[pop_data.index(ind)]['fitness'] = fitness
 
-    return pop_data
+    best_ind = (0, [])
+
+    best_ind = get_best_ind(pop_data, best_ind)
+
+    return pop_data, best_ind
+
 
 def random_weights(env, n_genes, n_pop):
     """
@@ -39,9 +61,7 @@ def random_weights(env, n_genes, n_pop):
         fitness = run_play(weights, env)
         pop_data += [{'fitness': fitness, 'target': weights}]
 
-    for i in pop_data:
-        if i['fitness'] > best_ind[0]:
-            best_ind = (i['fitness'], i['target'])
+    best_ind = get_best_ind(pop_data, best_ind)
 
     return pop_data, best_ind
 
@@ -101,7 +121,7 @@ def crossover(pop_data, n_genes, CR):
     return pop_data
 
 
-def selection(env, pop_data):
+def selection(env, pop_data, best_ind):
 
     new_pop_data = []
 
@@ -123,17 +143,20 @@ def selection(env, pop_data):
             new_pop_data += [{'fitness': ind['fitness'], 'target': ind['target']}]
             print('Choose TARGET')
 
+    best_ind = get_best_ind(pop_data, best_ind)
 
-    return new_pop_data
+    return new_pop_data, best_ind
 
 
 def differential_evolution(n_hidden_neurons, n_gens, n_pop, env, n_genes,
-                           run, enemies, F, CR, pop_data):
+                           run, enemy, F, CR, pop_data):
+
+    env.update_parameter('enemies',[enemy])
 
     if not pop_data:
         pop_data, best_ind = random_weights(env, n_genes, n_pop)
     else:
-        pop_data = recalc_fitness(pop_data, env)
+        pop_data, best_ind = recalc_fitness(pop_data, env)
 
 
     # loop over generations
@@ -144,6 +167,6 @@ def differential_evolution(n_hidden_neurons, n_gens, n_pop, env, n_genes,
 
         pop_data = crossover(pop_data, n_genes, CR)
 
-        pop_data = selection(env, pop_data)
+        pop_data, best_ind = selection(env, pop_data, best_ind)
 
-    return pop_data
+    return pop_data, best_ind
