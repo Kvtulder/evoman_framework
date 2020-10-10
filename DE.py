@@ -1,22 +1,51 @@
 import numpy as np
 import random as rnd
-
-# from scipy.optimize import differential_evolution as diff_evol
+import sys, os
 
 """
 This file implements the Differential Evolution algorithm using scipy
 """
 
 
-def get_best_ind(pop_data, best_ind):
+def save_gen(mode, run, gen, pop_data, enemies, enemy):
     """
-    Checks if a new best individual is found
+    Saves run data to csv
     """
-    for i in pop_data:
-        if i['fitness'] > best_ind[0]:
-            best_ind = (i['fitness'], i['target'])
+    map_name = f'{mode}_enemies_{str(enemies)}'
+    # enemies_name = ''
+    # for i in enemies:
+    #     enemies_name += (str(i) + '_')
+    # map_name += enemies_name
 
-    return best_ind
+    if not os.path.exists(map_name):
+        os.makedirs(map_name)
+
+    string = str(enemy) + ',' + str(pop_data[0]['fitness'])
+    for i in range(1, len(pop_data)):
+        string += ", "
+        string += str(pop_data[i]['fitness'])
+    f = open(map_name + '/' + mode + '_' + str(enemies)+ '_' + str(run) + ".csv", "a")
+    f.write(string + '\n')
+    f.close()
+
+
+def save_bestind(mode, run, enemies, best_ind, avg_best_fitness):
+    """
+    Saves best individual data of each run
+    """
+    map_name = f'{mode}_enemies_{str(enemies)}'
+    # enemies_name = ''
+    # for i in enemies:
+    #     enemies_name += (str(i) + '_')
+    # map_name += enemies_name
+
+    string = str(avg_best_fitness)
+    for weight in best_ind:
+        string += ", "
+        string += str(weight)
+    f = open(map_name + '/' + mode + '_best_' + str(enemies) + ".csv", "a")
+    f.write(string + '\n')
+    f.close()
 
 
 def run_play(weights, env):
@@ -35,14 +64,13 @@ def recalc_fitness(pop_data, env):
     """
     for ind in pop_data:
         fitness = run_play(ind['target'], env)
-        print(fitness)
         pop_data[pop_data.index(ind)]['fitness'] = fitness
 
-    best_ind = (0, [])
+    # best_ind = (0, [])
 
-    best_ind = get_best_ind(pop_data, best_ind)
+    # best_ind = get_best_ind(pop_data, best_ind)
 
-    return pop_data, best_ind
+    return pop_data
 
 
 def random_weights(env, n_genes, n_pop):
@@ -51,7 +79,7 @@ def random_weights(env, n_genes, n_pop):
     """
 
     pop_data = []
-    best_ind = (0,[])
+    # best_ind = (0,[])
 
     for ind in range(n_pop):
 
@@ -61,9 +89,9 @@ def random_weights(env, n_genes, n_pop):
         fitness = run_play(weights, env)
         pop_data += [{'fitness': fitness, 'target': weights}]
 
-    best_ind = get_best_ind(pop_data, best_ind)
+    # best_ind = get_best_ind(pop_data, best_ind)
 
-    return pop_data, best_ind
+    return pop_data
 
 
 def mutate(pop_data, n_genes, F):
@@ -121,7 +149,10 @@ def crossover(pop_data, n_genes, CR):
     return pop_data
 
 
-def selection(env, pop_data, best_ind):
+def selection(env, pop_data):
+    """
+    Evaluates trial vector, selects best from target and trial vector
+    """
 
     new_pop_data = []
 
@@ -143,20 +174,23 @@ def selection(env, pop_data, best_ind):
             new_pop_data += [{'fitness': ind['fitness'], 'target': ind['target']}]
             print('Choose TARGET')
 
-    best_ind = get_best_ind(pop_data, best_ind)
+    # best_ind = get_best_ind(pop_data, best_ind)
 
-    return new_pop_data, best_ind
+    return new_pop_data
 
 
-def differential_evolution(n_hidden_neurons, n_gens, n_pop, env, n_genes,
-                           run, enemy, F, CR, pop_data):
+def differential_evolution(mode, n_hidden_neurons, n_gens, n_pop, env, n_genes,
+                           run, enemy, enemies, F, CR, pop_data):
+    """
+    Performs differential evolution
+    """
 
     env.update_parameter('enemies',[enemy])
 
     if not pop_data:
-        pop_data, best_ind = random_weights(env, n_genes, n_pop)
+        pop_data = random_weights(env, n_genes, n_pop)
     else:
-        pop_data, best_ind = recalc_fitness(pop_data, env)
+        pop_data = recalc_fitness(pop_data, env)
 
 
     # loop over generations
@@ -167,6 +201,8 @@ def differential_evolution(n_hidden_neurons, n_gens, n_pop, env, n_genes,
 
         pop_data = crossover(pop_data, n_genes, CR)
 
-        pop_data, best_ind = selection(env, pop_data, best_ind)
+        pop_data = selection(env, pop_data)
 
-    return pop_data, best_ind
+        save_gen(mode, run, gen, pop_data, enemies, enemy)
+
+    return pop_data

@@ -9,7 +9,8 @@ from DE import differential_evolution
 
 n_hidden_neurons = 10
 
-def init(enemies, multiplemode):
+
+def init(enemies):
     """
     Initialise game environment
     """
@@ -23,54 +24,92 @@ def init(enemies, multiplemode):
     env = Environment(experiment_name=experiment_name,
                       playermode='ai',
                       player_controller=controller,
-                      enemies=enemies,
-                      multiplemode=multiplemode
+                      enemies=enemies
                       )
 
     return env
 
+
+def save_bestind(mode, run, enemies, best_ind, avg_best_fitness):
+    """
+    Saves best individual data of each run
+    """
+    map_name = f'{mode}_enemies_{str(enemies)}'
+
+    string = str(avg_best_fitness)
+    for weight in best_ind:
+        string += ", "
+        string += str(weight)
+    f = open(map_name + '/' + mode + '_best_' + str(enemies) + ".csv", "a")
+    f.write(string + '\n')
+    f.close()
+
+
+def get_best_ind(env, pop_data):
+    """
+    Test which weights perform best on all enemies:
+    """
+
+    fitness_all_enemies = {}
+    for ind in pop_data:
+        # print(pop_data)
+        # print(f'\n Check performance for individual {pop_data.index(ind)}:')
+        fitness_all_enemies[pop_data.index(ind)] = []
+        for i in range(1,9):
+            env.update_parameter('enemies', [i])
+            fitness = env.play(pcont=ind['target'])
+            fitness_all_enemies[pop_data.index(ind)] += [fitness[0]]
+
+    # choose best individual and save
+    print(fitness_all_enemies)
+    for i in fitness_all_enemies:
+        fitness_all_enemies[i] = sum(fitness_all_enemies[i])/len(fitness_all_enemies[i])
+    fitness_all_enemies = {k: v for k, v in sorted(fitness_all_enemies.items(), key=lambda item: item[1])}
+    print(fitness_all_enemies)
+
+    # save best individuals
+    # print(list(fitness_all_enemies.keys())[-1])
+    best_ind_index = list(fitness_all_enemies.keys())[-1]
+    avg_best_fitness = fitness_all_enemies[best_ind_index]
+    best_ind = pop_data[best_ind_index]['target']
+    # print(best_ind)
+    save_bestind(mode, run, enemies, best_ind, avg_best_fitness)
+
+
 if __name__ == '__main__':
 
+    # set parameters for game
+    n_runs    = 1    # amount the total evolution is performed, standard is 10
+    n_subgens = 3    # number of generations trained on each enemy before passed
+                     # to the other enemies
+    n_gens    = 10   # number of generations for which the whole set of enemies
+                     # is trained
+    n_pop     = 10   # number of individuals in each population
+    mode      = 'DE' # game mode
+    enemies = [7,8]  # set of enemies the weights are trained on
 
+    # generations = np.arange(0, n_runs*len(enemies))
 
-    n_runs = 5
-    n_gens = 3
-    n_pop  = 10
-
-    # enemies = [2,1,2,1]
-    enemies = [6,7,4]
-    indeces = np.arange(0, n_runs*len(enemies))
-    print(indeces)
-
-    F = 1.5
-    CR = 0.8
+    F = 1.2
+    CR = 0.7
 
     n_genes= n_hidden_neurons+20*n_hidden_neurons+5+n_hidden_neurons*5
 
-    run = 1
+    env = init([enemies[0]])
 
-    multiplemode = 'no'
-
-    env = init([enemies[0]], multiplemode)
-
+    # evolution
     pop_data = False
+    for run in range(n_runs):
 
-    best_solutions = {i: [] for i in enemies}
-    print(best_solutions)
+        for gen in range(n_gens):
+            # select which enemy to play against
+            enemy = enemies[gen%len(enemies)]
+            print("\n"+f"Iteration {gen} for enemy {enemy}."+"\n")
 
-    for i in indeces:
-        enemy = enemies[i%len(enemies)]
-        print("\n"+f"Iteration {i} for enemy {enemy}."+"\n")
+            # perform evolution for enemy, n_gens times, get evolved weights
+            pop_data = differential_evolution(mode, n_hidden_neurons, n_subgens, n_pop,
+                                              env, n_genes, run, enemy, enemies, F,
+                                              CR, pop_data)
 
-        pop_data, best_ind = differential_evolution(n_hidden_neurons, n_gens, n_pop, env, n_genes, run,
-                               enemy, F, CR, pop_data)
-
-        best_solutions[enemy] += [best_ind]
-        print(best_solutions)
-
-    all_enemies = {}
-    gain_measure = 0
-    for i in range(1,9):
-        env.update_parameter('enemies', [i])
-        fitness = env.play(pcont=best_solutions[enemies[-1]][-1][1])
-        all_enemies[i] = fitness[0]
+        # get best individual and save to csv
+        get_best_ind(env, pop_data)
