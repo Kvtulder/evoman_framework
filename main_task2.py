@@ -51,21 +51,23 @@ def get_best_ind(env, pop_data):
     """
 
     fitness_all_enemies = {}
-    for ind in pop_data:
-        # print(pop_data)
-        # print(f'\n Check performance for individual {pop_data.index(ind)}:')
-        fitness_all_enemies[pop_data.index(ind)] = []
-        for i in range(1,9):
-            env.update_parameter('enemies', [i])
+    for i, ind in enumerate(pop_data):
+        # print(type(pop_data))
+        # print(type(ind))
+        print(f'\n Check performance for individual {i}:')
+        fitness_all_enemies[i] = []
+        for enemy in range(1,9):
+            env.update_parameter('enemies', [enemy])
             fitness = env.play(pcont=ind['target'])
-            fitness_all_enemies[pop_data.index(ind)] += [fitness[0]]
+            fitness_all_enemies[i] += [fitness[0]]
+        print(fitness_all_enemies)
 
     # choose best individual and save
-    print(fitness_all_enemies)
+    # print(fitness_all_enemies)
     for i in fitness_all_enemies:
         fitness_all_enemies[i] = sum(fitness_all_enemies[i])/len(fitness_all_enemies[i])
     fitness_all_enemies = {k: v for k, v in sorted(fitness_all_enemies.items(), key=lambda item: item[1])}
-    print(fitness_all_enemies)
+    # print(fitness_all_enemies)
 
     # save best individuals
     # print(list(fitness_all_enemies.keys())[-1])
@@ -79,19 +81,18 @@ def get_best_ind(env, pop_data):
 if __name__ == '__main__':
 
     # set parameters for game
+    # enemies = [6,7] # set of enemies the weights are trained on
+    enemies = [6,7,4]
     n_runs    = 1    # amount the total evolution is performed, standard is 10
     n_subgens = 3    # number of generations trained on each enemy before passed
                      # to the other enemies
-    n_gens    = 10   # number of generations for which the whole set of enemies
+    n_gens    = 5*len(enemies)   # number of generations for which the whole set of enemies
                      # is trained
-    n_pop     = 10   # number of individuals in each population
+    n_pop     = 15   # number of individuals in each population
     mode      = 'DE' # game mode
-    enemies = [7,8]  # set of enemies the weights are trained on
 
-    # generations = np.arange(0, n_runs*len(enemies))
-
-    F = 1.2
-    CR = 0.7
+    F = 0.3
+    CR = 0.3
 
     n_genes= n_hidden_neurons+20*n_hidden_neurons+5+n_hidden_neurons*5
 
